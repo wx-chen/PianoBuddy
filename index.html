@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PianoBuddy</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Inter:wght@400;600&display=swap"
+    rel="stylesheet">
+
+  <!-- Core Styles -->
+  <link rel="stylesheet" href="./styles.css" />
+
+  <!-- React Dependencies -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+  <!-- Babel for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Confetti for Celebration -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    // DATA: Buddies
+    const buddies = [
+      {
+        id: 'melody',
+        name: 'Melody the Cat',
+        assets: {
+          happy: './assets/melody_happy.png',
+          anxious: './assets/melody_anxious.png',
+          sleepy: './assets/melody_sleepy.png'
+        },
+        color: '#FF8F5E'
+      },
+      {
+        id: 'rhythm',
+        name: 'Rhythm the Panda',
+        assets: {
+          happy: './assets/rhythm_happy.png',
+          anxious: './assets/rhythm_anxious.png',
+          sleepy: './assets/rhythm_sleepy.png'
+        },
+        color: '#4BC2A5'
+      }
+    ];
+
+    // DATA: Quotes
+    const quotes = {
+      happy: [
+        "Great job! Keep it up!",
+        "You are making beautiful music!",
+        "Wow! That sounded amazing!",
+        "One step closer to mastery!",
+        "I love listening to you play!",
+        "Fantastic focus!",
+        "You're a star!",
+        "Music to my ears!"
+      ],
+      anxious: [
+        "Are you still there?",
+        "I'm waiting for the next song...",
+        "Let's practice soon!",
+        "Don't give up now!",
+        "The piano misses you!",
+        "Time for one more try?",
+        "I'm getting a bit lonely..."
+      ],
+      sleepy: [
+        "Zzz... oh! You're back!",
+        "I dreamt of music...",
+        "Is it time to play again?",
+        "*Yawn* Ready when you are!",
+        "Wake me up with a tune!"
+      ]
+    };
+
+    // CONTEXT: AppContext
+    const { createContext, useState, useEffect, useContext, useRef } = React;
+    const AppContext = createContext();
+
+    const AppProvider = ({ children }) => {
+      const [currentBuddyId, setCurrentBuddyId] = useState(null);
+      const [view, setView] = useState('onboarding');
+      const [goals, setGoals] = useState([]);
+      const [inactivityThreshold, setInactivityThreshold] = useState(5);
+
+      // GLOBAL TIMER STATE
+      const [sessionActiveSeconds, setSessionActiveSeconds] = useState(0);
+      const [hasStarted, setHasStarted] = useState(false);
+
+      const addGoal = (tuneName, targetCount) => {
+        const newGoal = {
+          id: Date.now().toString(),
+          tuneName,
+          targetCount: parseInt(targetCount),
+          currentCount: 0
+        };
+        setGoals(prev => [...prev, newGoal]);
+      };
+
+      const removeGoal = (id) => {
+        setGoals(prev => prev.filter(g => g.id !== id));
+      };
+
+      const incrementProgress = (id) => {
+        if (!hasStarted) setHasStarted(true); // Start global timer on first progress
+        setGoals(prev => prev.map(g => {
+          if (g.id === id) {
+            return { ...g, currentCount: g.currentCount + 1 };
+          }
+          return g;
+        }));
+      };
+
+      const resetDailyProgress = () => {
+        setGoals(prev => prev.map(g => ({ ...g, currentCount: 0 })));
+        setSessionActiveSeconds(0);
+        setHasStarted(false);
+      };
+
+      const value = {
+        currentBuddyId,
+        setCurrentBuddyId,
+        view,
+        setView,
+        goals,
+        addGoal,
+        removeGoal,
+        incrementProgress,
+        resetDailyProgress,
+        inactivityThreshold,
+        setInactivityThreshold,
+        sessionActiveSeconds,
+        setSessionActiveSeconds,
+        hasStarted,
+        setHasStarted
+      };
+
+      return (
+        <AppContext.Provider value={value}>
+          {children}
+        </AppContext.Provider>
+      );
+    };
+
+    // COMPONENT: BuddyDisplay
+    const BuddyDisplay = ({ buddyId, mood, message }) => {
+      const buddy = buddies.find(b => b.id === buddyId);
+      if (!buddy) return null;
+      const asset = buddy.assets[mood] || buddy.assets.happy;
+
+      return (
+        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          {message && (
+            <div style={{
+              background: 'white',
+              padding: '1rem',
+              borderRadius: '24px',
+              borderBottomLeftRadius: '4px',
+              boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+              marginBottom: '1rem',
+              maxWidth: '200px',
+              textAlign: 'center',
+              animation: 'popIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28)',
+              fontFamily: 'Fredoka, sans-serif',
+              color: '#2D2D2D'
+            }}>
+              {message}
+            </div>
+          )}
+          <img
+            src={asset}
+            alt={`${buddy.name} is ${mood}`}
+            style={{
+              width: '200px',
+              height: '200px',
+              objectFit: 'contain',
+              transition: 'all 0.5s ease'
+            }}
+          />
+          <style>{`
+                      @keyframes popIn {
+                          0% { transform: scale(0); opacity: 0; }
+                          100% { transform: scale(1); opacity: 1; }
+                      }
+                  `}</style>
+        </div>
+      );
+    };
+
+    // COMPONENT: BuddySelector
+    const BuddySelector = () => {
+      const { setCurrentBuddyId, setView, goals } = useContext(AppContext);
+
+      const handleSelect = (buddyId) => {
+        setCurrentBuddyId(buddyId);
+        if (goals.length === 0) {
+          setView('settings');
+        } else {
+          setView('practice');
+        }
+      };
+
+      return (
+        <div className="buddy-selector-container" style={{ padding: '2rem', textAlign: 'center' }}>
+          <h1 style={{ fontFamily: 'Fredoka, sans-serif', color: '#2D2D2D', marginBottom: '1rem' }}>
+            Pick Your Piano Buddy!
+          </h1>
+          <p style={{ color: '#6B7280', marginBottom: '2rem' }}>
+            Who will practice with you today?
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+            {buddies.map(buddy => (
+              <div
+                key={buddy.id}
+                onClick={() => handleSelect(buddy.id)}
+                className="btn"
+                style={{
+                  background: buddy.color,
+                  borderRadius: '24px',
+                  padding: '1.5rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  boxShadow: '0 10px 15px rgba(0,0,0,0.1)'
+                }}
+              >
+                <img
+                  src={buddy.assets.happy}
+                  alt={buddy.name}
+                  style={{ width: '120px', height: '120px', objectFit: 'contain', marginBottom: '1rem', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.1))' }}
+                />
+                <span style={{
+                  fontFamily: 'Fredoka, sans-serif',
+                  fontSize: '1.25rem',
+                  color: 'white'
+                }}>
+                  {buddy.name}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    };
+
+    // COMPONENT: ParentSettings
+    const ParentSettings = () => {
+      const {
+        goals,
+        addGoal,
+        removeGoal,
+        inactivityThreshold,
+        setInactivityThreshold,
+        setView
+      } = useContext(AppContext);
+
+      const [tuneName, setTuneName] = useState('');
+      const [counts, setCounts] = useState(5);
+
+      const handleAdd = (e) => {
+        e.preventDefault();
+        if (tuneName.trim()) {
+          addGoal(tuneName, counts);
+          setTuneName('');
+          setCounts(5);
+        }
+      };
+
+      return (
+        <div style={{ padding: '2rem', height: '100%', overflowY: 'auto' }}>
+          <h1 style={{ fontFamily: 'Fredoka, sans-serif', marginBottom: '1.5rem' }}>Settings</h1>
+
+          <section style={{ marginBottom: '2rem' }}>
+            <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Daily Goals</h2>
+
+            <form onSubmit={handleAdd} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+              <input
+                type="text"
+                placeholder="Tune Name (e.g. Minuet)"
+                value={tuneName}
+                onChange={(e) => setTuneName(e.target.value)}
+                style={{ flex: 1, padding: '0.75rem', borderRadius: '12px', border: '1px solid #E5E7EB', fontSize: '1rem' }}
+              />
+              <input
+                type="number"
+                min="1"
+                max="50"
+                value={counts}
+                onChange={(e) => setCounts(e.target.value)}
+                style={{ width: '80px', padding: '0.75rem', borderRadius: '12px', border: '1px solid #E5E7EB', fontSize: '1rem' }}
+              />
+              <button type="submit" className="btn" style={{ background: '#2D2D2D', color: 'white', padding: '0 1.5rem', borderRadius: '12px' }}>Add</button>
+            </form>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {goals.map(goal => (
+                <div key={goal.id} style={{
+                  background: 'white',
+                  padding: '1rem',
+                  borderRadius: '12px',
+                  border: '1px solid #E5E7EB',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <div>
+                    <strong style={{ display: 'block' }}>{goal.tuneName}</strong>
+                    <span style={{ color: '#6B7280' }}>{goal.currentCount} / {goal.targetCount}</span>
+                  </div>
+                  <button onClick={() => removeGoal(goal.id)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '0.5rem' }}>Remove</button>
+                </div>
+              ))}
+              {goals.length === 0 && <p style={{ color: '#9CA3AF', fontStyle: 'italic' }}>No goals added yet.</p>}
+            </div>
+          </section>
+
+          <section style={{ marginBottom: '2rem' }}>
+            <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Inactivity Timer</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <label>Alert after</label>
+              <select
+                value={inactivityThreshold}
+                onChange={(e) => setInactivityThreshold(Number(e.target.value))}
+                style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #E5E7EB' }}
+              >
+                <option value={0.5}>30 Seconds (Test)</option>
+                <option value={1}>1 Minute</option>
+                <option value={2}>2 Minutes</option>
+                <option value={3}>3 Minutes</option>
+                <option value={5}>5 Minutes</option>
+              </select>
+              <label>of inactivity</label>
+            </div>
+          </section>
+
+          <button
+            className="btn"
+            onClick={() => setView('practice')}
+            disabled={goals.length === 0}
+            style={{
+              width: '100%',
+              padding: '1rem',
+              background: goals.length > 0 ? '#4BC2A5' : '#D1D5DB',
+              color: 'white',
+              fontSize: '1.2rem',
+              borderRadius: '16px',
+              marginTop: 'auto'
+            }}
+          >
+            Start Practicing!
+          </button>
+        </div>
+      );
+    };
+
+    // COMPONENT: PracticeView
+    const PracticeView = () => {
+      const {
+        currentBuddyId,
+        goals,
+        incrementProgress,
+        inactivityThreshold,
+        setView,
+        sessionActiveSeconds,
+        setSessionActiveSeconds,
+        hasStarted
+      } = useContext(AppContext);
+
+      // Mood & Audio State
+      const [mood, setMood] = useState('happy');
+      const [message, setMessage] = useState('');
+      const lastPracticeRef = useRef(Date.now());
+      const snoreAudioRef = useRef(null);
+      const [isSnoozeMuted, setIsSnoozeMuted] = useState(false);
+      const [_, setTick] = useState(0);
+
+      // Derived State
+      const totalTarget = goals.reduce((acc, g) => acc + g.targetCount, 0);
+      const totalCurrent = goals.reduce((acc, g) => acc + g.currentCount, 0);
+      const overallProgress = totalTarget > 0 ? (totalCurrent / totalTarget) * 100 : 0;
+      const isAllDone = goals.length > 0 && totalCurrent >= totalTarget;
+
+      // Voice State
+      const voiceRef = useRef(null);
+
+      // Initialize Voice
+      useEffect(() => {
+        const setVoice = () => {
+          const voices = window.speechSynthesis.getVoices();
+          if (voices.length === 0) return;
+          let candidate = null;
+          if (currentBuddyId === 'melody') {
+            candidate = voices.find(v => v.name.includes('Google US English')) ||
+              voices.find(v => v.name.includes('Samantha')) ||
+              voices.find(v => v.name.includes('Female')) ||
+              voices.find(v => v.lang === 'en-US');
+          } else {
+            candidate = voices.find(v => v.name.includes('Google UK English Male')) ||
+              voices.find(v => v.name.includes('Daniel')) ||
+              voices.find(v => v.name.includes('Male')) ||
+              voices.find(v => v.lang === 'en-US');
+          }
+          voiceRef.current = candidate || voices[0];
+        };
+        setVoice();
+        window.speechSynthesis.onvoiceschanged = setVoice;
+        return () => { window.speechSynthesis.onvoiceschanged = null; }
+      }, [currentBuddyId]);
+
+      // TTS Helper
+      const speak = (text, emotion, overrideEmotion = null) => {
+        if (!window.speechSynthesis) return;
+        window.speechSynthesis.cancel();
+
+        if (snoreAudioRef.current) {
+          snoreAudioRef.current.pause();
+          snoreAudioRef.current.currentTime = 0;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        if (voiceRef.current) utterance.voice = voiceRef.current;
+
+        const basePitch = currentBuddyId === 'melody' ? 1.2 : 0.9;
+        const targetEmotion = overrideEmotion || emotion;
+
+        switch (targetEmotion) {
+          case 'happy':
+            utterance.pitch = basePitch + 0.1;
+            utterance.rate = 1.1;
+            break;
+          case 'anxious':
+            utterance.pitch = basePitch + 0.05;
+            utterance.rate = 1.2;
+            break;
+          case 'sleepy':
+            utterance.pitch = basePitch - 0.1;
+            utterance.rate = 0.8;
+            utterance.volume = 0.6;
+            break;
+          default:
+            utterance.pitch = basePitch;
+        }
+        window.speechSynthesis.speak(utterance);
+      };
+
+      // Snooze Logic (Real Sound)
+      useEffect(() => {
+        let snoozeInterval = null;
+        let snoozeTimeout = null;
+
+        if (mood === 'sleepy' && !isAllDone) {
+          const startSnoring = () => {
+            if (isSnoozeMuted) return;
+            if (window.speechSynthesis.speaking) return;
+
+            if (!snoreAudioRef.current) {
+              snoreAudioRef.current = new Audio('https://www.orangefreesounds.com/wp-content/uploads/2015/11/Cartoon-snoring.mp3');
+              snoreAudioRef.current.loop = true;
+              snoreAudioRef.current.volume = 0.4;
+            }
+            snoreAudioRef.current.play().catch(e => { /* interaction needed */ });
+          };
+
+          if (isSnoozeMuted && snoreAudioRef.current) {
+            snoreAudioRef.current.pause();
+            snoreAudioRef.current.currentTime = 0;
+            snoozeTimeout = setTimeout(() => {
+              setIsSnoozeMuted(false);
+            }, 60000);
+          }
+
+          snoozeInterval = setInterval(startSnoring, 1000);
+
+        } else {
+          if (snoozeInterval) clearInterval(snoozeInterval);
+          if (snoreAudioRef.current) {
+            snoreAudioRef.current.pause();
+            snoreAudioRef.current.currentTime = 0;
+          }
+          // FIX: Removed window.speechSynthesis.cancel() from here to prevent cutting off "I'm Awake" message
+          setIsSnoozeMuted(false);
+        }
+        return () => {
+          if (snoozeInterval) clearInterval(snoozeInterval);
+          if (snoozeTimeout) clearTimeout(snoozeTimeout);
+          if (snoreAudioRef.current) snoreAudioRef.current.pause();
+        };
+      }, [mood, isAllDone, isSnoozeMuted]);
+
+      // Timer & State Transitions
+      useEffect(() => {
+        if (isAllDone) {
+          setMood('happy');
+          return;
+        }
+
+        const interval = setInterval(() => {
+          const elapsedMinutes = (Date.now() - lastPracticeRef.current) / 60000;
+
+          // Logic for Active Time Tracking
+          if (hasStarted && mood !== 'sleepy') {
+            setSessionActiveSeconds(prev => prev + 1);
+          }
+
+          if (elapsedMinutes >= inactivityThreshold) {
+            if (mood !== 'sleepy') {
+              const transitionPhrase = "I am feeling sleepy now...";
+              setMessage(transitionPhrase);
+              speak(transitionPhrase, 'sleepy', 'happy');
+              setMood('sleepy');
+
+              // Retroactively subtract the idle time we counted while waiting for the buddy to fall asleep
+              setSessionActiveSeconds(prev => Math.max(0, prev - (inactivityThreshold * 60)));
+            }
+          } else if (elapsedMinutes >= inactivityThreshold / 2) {
+            if (mood !== 'anxious') {
+              setMood('anxious');
+              const anxiousQuote = quotes.anxious[Math.floor(Math.random() * quotes.anxious.length)];
+              setMessage(anxiousQuote);
+              speak(anxiousQuote, 'anxious');
+            }
+          } else {
+            if (mood !== 'happy') setMood('happy');
+          }
+        }, 1000);
+        return () => clearInterval(interval);
+      }, [inactivityThreshold, mood, isAllDone, hasStarted]);
+
+      useEffect(() => {
+        if (isAllDone) {
+          const count = 200;
+          const defaults = { origin: { y: 0.7 } };
+          window.confetti && window.confetti({ ...defaults, particleCount: count, spread: 70, startVelocity: 40 });
+          setMessage("ALL GOALS FINISHED! YAY!");
+          speak("Amazing! You finished everything! You are a super star!", 'happy');
+        }
+      }, [isAllDone]);
+
+      const handleProgress = (goalId) => {
+        lastPracticeRef.current = Date.now();
+        setMood('happy');
+        incrementProgress(goalId);
+
+        if (mood === 'sleepy') {
+          const wakeMsg = "I'm awake! Let's play!";
+          setMessage(wakeMsg);
+          speak(wakeMsg, 'happy');
+        } else {
+          const randomQuote = quotes.happy[Math.floor(Math.random() * quotes.happy.length)];
+          setMessage(randomQuote);
+          speak(randomQuote, 'happy');
+        }
+        setTimeout(() => setMessage(''), 3000);
+      };
+
+      const handleImPlaying = (e) => {
+        e.stopPropagation();
+        setIsSnoozeMuted(true);
+      };
+
+      const formatTime = (totalSeconds) => {
+        const m = Math.floor(totalSeconds / 60);
+        const s = totalSeconds % 60;
+        return `${m}m ${s}s`;
+      };
+
+      return (
+        <div
+          style={{
+            padding: '2rem',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            background: mood === 'sleepy' && !isAllDone ? '#F3F4F6' : 'white',
+            transition: 'background 1s ease',
+            overflow: 'hidden'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <button onClick={(e) => { e.stopPropagation(); setView('settings'); }} style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer' }}>⚙️ Settings</button>
+            <div style={{ fontFamily: 'Fredoka, sans-serif', color: '#4BC2A5' }}>
+              {isAllDone ? `Total Time: ${formatTime(sessionActiveSeconds)}` : `${Math.round(overallProgress)}% Done Today`}
+            </div>
+          </div>
+
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{
+              animation: isAllDone ? 'bounce 1s infinite' : 'none',
+              transformOrigin: 'bottom',
+              marginBottom: '1rem'
+            }}>
+              <BuddyDisplay buddyId={currentBuddyId} mood={mood} message={message} />
+            </div>
+
+            {mood === 'sleepy' && !isAllDone && (
+              <button
+                onClick={handleImPlaying}
+                className="btn"
+                style={{
+                  background: '#FF8F5E',
+                  color: 'white',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '20px',
+                  fontSize: '0.9rem',
+                  marginTop: '0rem',
+                  opacity: isSnoozeMuted ? 0.5 : 1
+                }}
+              >
+                {isSnoozeMuted ? "Shhh... (Muted)" : "I'm Playing! (Shhh!)"}
+              </button>
+            )}
+
+            <style>{`
+                 @keyframes bounce {
+                     0%, 100% { transform: translateY(0); }
+                     50% { transform: translateY(-20px); }
+                 }
+             `}</style>
+          </div>
+
+          <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {goals.map(goal => {
+              const isDone = goal.currentCount >= goal.targetCount;
+              const progress = Math.min((goal.currentCount / goal.targetCount) * 100, 100);
+              return (
+                <div key={goal.id} style={{ background: '#F9FAFB', borderRadius: '16px', padding: '1rem', border: isDone ? '2px solid #4BC2A5' : '1px solid #E5E7EB' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                    <span style={{ fontWeight: '600' }}>{goal.tuneName}</span>
+                    <span style={{ color: '#6B7280' }}>{goal.currentCount} / {goal.targetCount}</span>
+                  </div>
+                  <div style={{ height: '8px', background: '#E5E7EB', borderRadius: '4px', marginBottom: '1rem', overflow: 'hidden' }}>
+                    <div style={{ width: `${progress}%`, height: '100%', background: isDone ? '#4BC2A5' : '#FF8F5E', transition: 'width 0.5s ease' }}></div>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); if (!isDone) handleProgress(goal.id); }}
+                    className="btn"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      background: isDone ? '#10B981' : '#2D2D2D',
+                      color: 'white',
+                      borderRadius: '12px',
+                      cursor: isDone ? 'default' : 'pointer',
+                      opacity: isDone ? 0.8 : 1
+                    }}
+                  >
+                    {isDone ? 'Goal Complete! ★' : 'Finished One Time!'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    };
+
+    // MAIN: App
+    const App = () => {
+      const { view } = useContext(AppContext);
+      const renderView = () => {
+        switch (view) {
+          case 'onboarding': return <BuddySelector />;
+          case 'settings': return <ParentSettings />;
+          case 'practice': return <PracticeView />;
+          default: return <BuddySelector />;
+        }
+      };
+      return <div style={{ height: '100%', width: '100%' }}>{renderView()}</div>;
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<AppProvider><App /></AppProvider>);
+  </script>
+</body>
+
+</html>
