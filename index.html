@@ -35,9 +35,11 @@
         id: 'melody',
         name: 'Melody the Cat',
         assets: {
-          happy: './assets/melody_happy.png',
-          anxious: './assets/melody_anxious.png',
-          sleepy: './assets/melody_sleepy.png'
+          happy: './assets/melody_happy_sora.PNG',
+          anxious: './assets/melody_tired.PNG',
+          sleepy: './assets/melody_sleepy.PNG',
+          videoHappy: './assets/melody_happy_video.mp4',
+          videoSleepy: './assets/melody_sleeping_video.mp4'
         },
         color: '#FF8F5E'
       },
@@ -45,25 +47,93 @@
         id: 'rhythm',
         name: 'Rhythm the Panda',
         assets: {
-          happy: './assets/rhythm_happy.png',
-          anxious: './assets/rhythm_anxious.png',
-          sleepy: './assets/rhythm_sleepy.png'
+          happy: './assets/rhythm_happy_sora.PNG',
+          anxious: './assets/rhythm_anxious.PNG',
+          sleepy: './assets/panda_sleepy.JPG',
+          videoHappy: './assets/rhythm_happy_video.mp4',
+          videoSleepy: './assets/rhythm_sleepy_video.mp4'
         },
         color: '#4BC2A5'
+      },
+      {
+        id: 'sparkle',
+        name: 'Sparkle the Unicorn',
+        assets: {
+          happy: './assets/sparkle_happy_sora.PNG',
+          anxious: './assets/sparkle_anxious.PNG',
+          sleepy: './assets/sparkle_sleepy.JPG',
+          videoHappy: './assets/sparkle_happy_video.mp4',
+          videoSleepy: './assets/sparkle_sleepy_video.mp4'
+        },
+        color: '#FFB7B2'
+      },
+      {
+        id: 'splash',
+        name: 'Splash the Dolphin',
+        assets: {
+          happy: './assets/splash_happy_sora.PNG',
+          anxious: './assets/splash_anxious.PNG',
+          sleepy: './assets/splash_sleepy.JPG',
+          videoHappy: './assets/splash_happy_video.mp4',
+          videoSleepy: './assets/splash_sleepy_video.mp4'
+        },
+        color: '#64C5EB'
       }
     ];
 
     // DATA: Quotes
     const quotes = {
       happy: [
-        "Great job! Keep it up!",
-        "You are making beautiful music!",
-        "Wow! That sounded amazing!",
-        "One step closer to mastery!",
-        "I love listening to you play!",
-        "Fantastic focus!",
-        "You're a star!",
-        "Music to my ears!"
+        "Yay! You finished the tune—great focusing!",
+        "Awesome job sticking with the music!",
+        "You did it! Your practice power is growing!",
+        "Nice playing—your fingers were working hard!",
+        "Hooray! You stayed focused to the end!",
+        "Great job trying your best on that tune!",
+        "Wow! That was some careful practicing!",
+        "You're getting better every time you practice!",
+        "High five! You didn't give up!",
+        "That was a strong practice—well done!",
+        "Fantastic! You kept your eyes and ears on the music!",
+        "Nice work finishing the whole song!",
+        "You practiced like a music hero!",
+        "I love how hard you tried just now!",
+        "Great focus—your piano heard you!",
+        "That tune got better because you practiced!",
+        "You're training your fingers—good job!",
+        "Yay! Another practice round complete!",
+        "You stayed calm and kept going—awesome!",
+        "That was some super practice power!",
+        "Way to go! You paid attention the whole time!",
+        "You're learning more with every try!",
+        "Nice job working through the song!",
+        "Practice win! You finished the tune!",
+        "Your effort made that music shine!",
+        "You're doing exactly what musicians do!",
+        "Great job using your focus muscles!",
+        "You're getting stronger at piano practice!",
+        "That was careful playing—I liked it!",
+        "You gave that tune a good try—yay!",
+        "You practiced with your whole brain—nice!",
+        "That was a smart and steady practice!",
+        "You didn't rush, and that helped—good job!",
+        "Another tune done—keep it up!",
+        "You're building piano skills step by step!",
+        "I can hear how hard you worked!",
+        "That was fun practice—great job!",
+        "You stayed with the song—awesome focus!",
+        "You're becoming a piano pro, one tune at a time!",
+        "Nice effort! Your practice really counts!",
+        "You kept going even when it was tricky—wow!",
+        "That was a brave try—great job!",
+        "You're helping your fingers learn—yay!",
+        "Practice complete! You did your best!",
+        "You played with care—well done!",
+        "That was a happy practice moment!",
+        "You're doing great by practicing every time!",
+        "Your focus helped that tune sound better!",
+        "You finished the song—celebration time!",
+        "Great practice! Ready for the next adventure?"
       ],
       anxious: [
         "Are you still there?",
@@ -153,13 +223,59 @@
     };
 
     // COMPONENT: BuddyDisplay
-    const BuddyDisplay = ({ buddyId, mood, message }) => {
+    const BuddyDisplay = ({
+      buddyId,
+      mood,
+      message,
+      isPlayingVideo,
+      onVideoEnd,
+      isPlayingSleepyVideo,
+      onSleepyVideoEnd
+    }) => {
       const buddy = buddies.find(b => b.id === buddyId);
+      const videoRef = useRef(null);
+      const sleepyVideoRef = useRef(null);
+      const [sleepyVideoEnded, setSleepyVideoEnded] = useState(false);
+
       if (!buddy) return null;
       const asset = buddy.assets[mood] || buddy.assets.happy;
+      const videoHappyAsset = buddy.assets.videoHappy;
+      const videoSleepyAsset = buddy.assets.videoSleepy;
+
+      // Auto-play happy video when isPlayingVideo becomes true
+      useEffect(() => {
+        if (isPlayingVideo && videoRef.current && videoHappyAsset) {
+          videoRef.current.currentTime = 0;
+          videoRef.current.play().catch(e => console.log('Video play error:', e));
+        }
+      }, [isPlayingVideo, videoHappyAsset]);
+
+      // Auto-play sleepy video when isPlayingSleepyVideo becomes true
+      useEffect(() => {
+        if (isPlayingSleepyVideo && sleepyVideoRef.current && videoSleepyAsset) {
+          setSleepyVideoEnded(false);
+          sleepyVideoRef.current.currentTime = 0;
+          sleepyVideoRef.current.play().catch(e => console.log('Sleepy video play error:', e));
+        }
+      }, [isPlayingSleepyVideo, videoSleepyAsset]);
+
+      const handleVideoEnded = () => {
+        if (onVideoEnd) onVideoEnd();
+      };
+
+      const handleSleepyVideoEnded = () => {
+        setSleepyVideoEnded(true);
+        // Video stays on last frame (no more action needed)
+        if (onSleepyVideoEnd) onSleepyVideoEnd();
+      };
+
+      // Determine which layer to show
+      const showHappyVideo = isPlayingVideo && videoHappyAsset;
+      const showSleepyVideo = (isPlayingSleepyVideo || sleepyVideoEnded) && videoSleepyAsset && mood === 'sleepy';
+      const showStaticImage = !showHappyVideo && !showSleepyVideo;
 
       return (
-        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           {message && (
             <div style={{
               background: 'white',
@@ -177,16 +293,68 @@
               {message}
             </div>
           )}
-          <img
-            src={asset}
-            alt={`${buddy.name} is ${mood}`}
-            style={{
-              width: '200px',
-              height: '200px',
-              objectFit: 'contain',
-              transition: 'all 0.5s ease'
-            }}
-          />
+
+          {/* Buddy image/video container - stacked in same position */}
+          <div style={{ position: 'relative', width: '200px', height: '200px' }}>
+            {/* Happy Video layer */}
+            {videoHappyAsset && (
+              <video
+                ref={videoRef}
+                src={videoHappyAsset}
+                onEnded={handleVideoEnded}
+                playsInline
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '200px',
+                  height: '200px',
+                  objectFit: 'contain',
+                  opacity: showHappyVideo ? 1 : 0,
+                  transition: 'opacity 0.3s ease',
+                  pointerEvents: 'none'
+                }}
+              />
+            )}
+
+            {/* Sleepy Video layer */}
+            {videoSleepyAsset && (
+              <video
+                ref={sleepyVideoRef}
+                src={videoSleepyAsset}
+                onEnded={handleSleepyVideoEnded}
+                playsInline
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '200px',
+                  height: '200px',
+                  objectFit: 'contain',
+                  opacity: showSleepyVideo ? 1 : 0,
+                  transition: 'opacity 0.3s ease',
+                  pointerEvents: 'none'
+                }}
+              />
+            )}
+
+            {/* Static image layer */}
+            <img
+              src={asset}
+              alt={`${buddy.name} is ${mood}`}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '200px',
+                height: '200px',
+                objectFit: 'contain',
+                opacity: showStaticImage ? 1 : 0,
+                transition: 'opacity 0.3s ease'
+              }}
+            />
+          </div>
+
           <style>{`
                       @keyframes popIn {
                           0% { transform: scale(0); opacity: 0; }
@@ -316,31 +484,12 @@
                 }}>
                   <div>
                     <strong style={{ display: 'block' }}>{goal.tuneName}</strong>
-                    <span style={{ color: '#6B7280' }}>{goal.currentCount} / {goal.targetCount}</span>
+                    <span style={{ color: '#6B7280' }}>{goal.targetCount} times</span>
                   </div>
                   <button onClick={() => removeGoal(goal.id)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '0.5rem' }}>Remove</button>
                 </div>
               ))}
               {goals.length === 0 && <p style={{ color: '#9CA3AF', fontStyle: 'italic' }}>No goals added yet.</p>}
-            </div>
-          </section>
-
-          <section style={{ marginBottom: '2rem' }}>
-            <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Inactivity Timer</h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <label>Alert after</label>
-              <select
-                value={inactivityThreshold}
-                onChange={(e) => setInactivityThreshold(Number(e.target.value))}
-                style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #E5E7EB' }}
-              >
-                <option value={0.5}>30 Seconds (Test)</option>
-                <option value={1}>1 Minute</option>
-                <option value={2}>2 Minutes</option>
-                <option value={3}>3 Minutes</option>
-                <option value={5}>5 Minutes</option>
-              </select>
-              <label>of inactivity</label>
             </div>
           </section>
 
@@ -371,6 +520,7 @@
         goals,
         incrementProgress,
         inactivityThreshold,
+        setInactivityThreshold,
         setView,
         sessionActiveSeconds,
         setSessionActiveSeconds,
@@ -381,8 +531,13 @@
       const [mood, setMood] = useState('happy');
       const [message, setMessage] = useState('');
       const lastPracticeRef = useRef(Date.now());
+      const daydreamingStartRef = useRef(null); // Separate ref for daydreaming countdown
       const snoreAudioRef = useRef(null);
       const [isSnoozeMuted, setIsSnoozeMuted] = useState(false);
+      const [isDaydreaming, setIsDaydreaming] = useState(false);
+      const [isPlayingVideo, setIsPlayingVideo] = useState(false);
+      const [isPlayingSleepyVideo, setIsPlayingSleepyVideo] = useState(false);
+      const [hasPlayedSleepyVideo, setHasPlayedSleepyVideo] = useState(false);
       const [_, setTick] = useState(0);
 
       // Derived State
@@ -400,7 +555,12 @@
           const voices = window.speechSynthesis.getVoices();
           if (voices.length === 0) return;
           let candidate = null;
-          if (currentBuddyId === 'melody') {
+
+          // Logic for voice selection based on buddy
+          // Sparkle and Splash should both be female-sounding (toddler style)
+          const isFemale = currentBuddyId === 'melody' || currentBuddyId === 'sparkle' || currentBuddyId === 'splash';
+
+          if (isFemale) {
             candidate = voices.find(v => v.name.includes('Google US English')) ||
               voices.find(v => v.name.includes('Samantha')) ||
               voices.find(v => v.name.includes('Female')) ||
@@ -431,111 +591,128 @@
         const utterance = new SpeechSynthesisUtterance(text);
         if (voiceRef.current) utterance.voice = voiceRef.current;
 
-        const basePitch = currentBuddyId === 'melody' ? 1.2 : 0.9;
+        // Base Pitch Logic
+        let basePitch = 1.0;
+        let baseRate = 1.0;
+
+        switch (currentBuddyId) {
+          case 'melody': basePitch = 1.2; break;
+          case 'rhythm': basePitch = 0.9; break;
+          // Unicorn: Toddler, cute, naughty (Lowered pitch from 1.5 to 1.3 to avoid breaking)
+          case 'sparkle': basePitch = 1.3; baseRate = 1.1; break;
+          // Dolphin: Toddler girl, giggles, playful (High pitch, fast)
+          case 'splash': basePitch = 1.4; baseRate = 1.2; break;
+          default: basePitch = 1.0;
+        }
+
         const targetEmotion = overrideEmotion || emotion;
 
         switch (targetEmotion) {
           case 'happy':
             utterance.pitch = basePitch + 0.1;
-            utterance.rate = 1.1;
+            utterance.rate = baseRate + 0.1;
             break;
           case 'anxious':
             utterance.pitch = basePitch + 0.05;
-            utterance.rate = 1.2;
+            utterance.rate = baseRate + 0.2;
             break;
           case 'sleepy':
             utterance.pitch = basePitch - 0.1;
-            utterance.rate = 0.8;
+            utterance.rate = baseRate * 0.8;
             utterance.volume = 0.6;
             break;
           default:
             utterance.pitch = basePitch;
+            utterance.rate = baseRate;
         }
         window.speechSynthesis.speak(utterance);
       };
 
       // Snooze Logic (Real Sound)
+      // Snooze Logic (Real Sound) - Only start AFTER video ends
       useEffect(() => {
         let snoozeInterval = null;
-        let snoozeTimeout = null;
 
-        if (mood === 'sleepy' && !isAllDone) {
-          const startSnoring = () => {
+        // Condition: Mood is sleepy, video has finished, and not muted
+        const readyToSnore = mood === 'sleepy' && !isAllDone && hasPlayedSleepyVideo;
+
+        if (readyToSnore) {
+          const playSnore = () => {
             if (isSnoozeMuted) return;
-            if (window.speechSynthesis.speaking) return;
-
-            if (!snoreAudioRef.current) {
-              snoreAudioRef.current = new Audio('https://www.orangefreesounds.com/wp-content/uploads/2015/11/Cartoon-snoring.mp3');
-              snoreAudioRef.current.loop = true;
-              snoreAudioRef.current.volume = 0.4;
+            if (snoreAudioRef.current) {
+              snoreAudioRef.current.currentTime = 0;
+              snoreAudioRef.current.play().catch(e => console.log('Audio play error:', e));
             }
-            snoreAudioRef.current.play().catch(e => { /* interaction needed */ });
           };
 
-          if (isSnoozeMuted && snoreAudioRef.current) {
-            snoreAudioRef.current.pause();
-            snoreAudioRef.current.currentTime = 0;
-            snoozeTimeout = setTimeout(() => {
-              setIsSnoozeMuted(false);
-            }, 60000);
+          if (!snoreAudioRef.current) {
+            snoreAudioRef.current = new Audio('https://www.orangefreesounds.com/wp-content/uploads/2015/11/Cartoon-snoring.mp3');
+            snoreAudioRef.current.volume = 0.4;
           }
 
-          snoozeInterval = setInterval(startSnoring, 1000);
-
+          // Start loop
+          snoozeInterval = setInterval(playSnore, 4000); // Loop every 4s
+          playSnore(); // Immediate first snore
         } else {
+          // Stop everything if mood changes or video is playing
           if (snoozeInterval) clearInterval(snoozeInterval);
           if (snoreAudioRef.current) {
             snoreAudioRef.current.pause();
             snoreAudioRef.current.currentTime = 0;
           }
-          // FIX: Removed window.speechSynthesis.cancel() from here to prevent cutting off "I'm Awake" message
           setIsSnoozeMuted(false);
         }
         return () => {
           if (snoozeInterval) clearInterval(snoozeInterval);
-          if (snoozeTimeout) clearTimeout(snoozeTimeout);
           if (snoreAudioRef.current) snoreAudioRef.current.pause();
         };
-      }, [mood, isAllDone, isSnoozeMuted]);
+      }, [mood, isAllDone, isSnoozeMuted, hasPlayedSleepyVideo]);
 
       // Timer & State Transitions
       useEffect(() => {
         if (isAllDone) {
           setMood('happy');
+          setIsDaydreaming(false);
           return;
         }
 
         const interval = setInterval(() => {
-          const elapsedMinutes = (Date.now() - lastPracticeRef.current) / 60000;
-
-          // Logic for Active Time Tracking
-          if (hasStarted && mood !== 'sleepy') {
+          // ACTIVE TIME LOGIC:
+          // Count ONLY if: Started AND Not Sleepy AND Not Daydreaming
+          if (hasStarted && mood !== 'sleepy' && !isDaydreaming) {
             setSessionActiveSeconds(prev => prev + 1);
           }
 
-          if (elapsedMinutes >= inactivityThreshold) {
-            if (mood !== 'sleepy') {
-              const transitionPhrase = "I am feeling sleepy now...";
-              setMessage(transitionPhrase);
-              speak(transitionPhrase, 'sleepy', 'happy');
-              setMood('sleepy');
+          // MOOD TRANSITION LOGIC:
+          // ONLY trigger countdown if isDaydreaming is true
+          if (isDaydreaming && daydreamingStartRef.current) {
+            const elapsedMinutes = (Date.now() - daydreamingStartRef.current) / 60000;
 
-              // Retroactively subtract the idle time we counted while waiting for the buddy to fall asleep
-              setSessionActiveSeconds(prev => Math.max(0, prev - (inactivityThreshold * 60)));
+            if (elapsedMinutes >= inactivityThreshold) {
+              if (mood !== 'sleepy') {
+                const transitionPhrase = "I am feeling sleepy now...";
+                setMessage(transitionPhrase);
+                speak(transitionPhrase, 'sleepy', 'happy');
+                setMood('sleepy');
+                // Trigger sleepy video
+                setIsPlayingSleepyVideo(true);
+                setHasPlayedSleepyVideo(false);
+              }
+            } else if (elapsedMinutes >= inactivityThreshold / 2) {
+              if (mood !== 'anxious') {
+                setMood('anxious');
+                const anxiousQuote = quotes.anxious[Math.floor(Math.random() * quotes.anxious.length)];
+                setMessage(anxiousQuote);
+                speak(anxiousQuote, 'anxious');
+              }
             }
-          } else if (elapsedMinutes >= inactivityThreshold / 2) {
-            if (mood !== 'anxious') {
-              setMood('anxious');
-              const anxiousQuote = quotes.anxious[Math.floor(Math.random() * quotes.anxious.length)];
-              setMessage(anxiousQuote);
-              speak(anxiousQuote, 'anxious');
-            }
-          } else {
+          } else if (!isDaydreaming) {
+            // If NOT Daydreaming, Buddy is ALWAYS Happy
             if (mood !== 'happy') setMood('happy');
           }
         }, 1000);
         return () => clearInterval(interval);
-      }, [inactivityThreshold, mood, isAllDone, hasStarted]);
+      }, [inactivityThreshold, mood, isAllDone, hasStarted, isDaydreaming]);
 
       useEffect(() => {
         if (isAllDone) {
@@ -550,18 +727,62 @@
       const handleProgress = (goalId) => {
         lastPracticeRef.current = Date.now();
         setMood('happy');
+        setIsDaydreaming(false); // Resume active practice
         incrementProgress(goalId);
 
+        let quoteToSpeak;
         if (mood === 'sleepy') {
-          const wakeMsg = "I'm awake! Let's play!";
-          setMessage(wakeMsg);
-          speak(wakeMsg, 'happy');
+          quoteToSpeak = "I'm awake! Let's play!";
         } else {
-          const randomQuote = quotes.happy[Math.floor(Math.random() * quotes.happy.length)];
-          setMessage(randomQuote);
-          speak(randomQuote, 'happy');
+          quoteToSpeak = quotes.happy[Math.floor(Math.random() * quotes.happy.length)];
         }
-        setTimeout(() => setMessage(''), 3000);
+        setMessage(quoteToSpeak);
+
+        // Speak first, then play video with sound when speech ends
+        speakThenVideo(quoteToSpeak);
+      };
+
+      // Speak, then trigger video when speech ends
+      const speakThenVideo = (text) => {
+        if (!window.speechSynthesis) {
+          setIsPlayingVideo(true); // Fallback: just play video
+          return;
+        }
+        window.speechSynthesis.cancel();
+
+        if (snoreAudioRef.current) {
+          snoreAudioRef.current.pause();
+          snoreAudioRef.current.currentTime = 0;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        if (voiceRef.current) utterance.voice = voiceRef.current;
+
+        // Get base pitch/rate for buddy
+        let basePitch = 1.0, baseRate = 1.0;
+        switch (currentBuddyId) {
+          case 'melody': basePitch = 1.2; break;
+          case 'rhythm': basePitch = 0.9; break;
+          case 'sparkle': basePitch = 1.3; baseRate = 1.1; break;
+          case 'splash': basePitch = 1.4; baseRate = 1.2; break;
+        }
+        utterance.pitch = basePitch + 0.1;
+        utterance.rate = baseRate + 0.1;
+
+        // When speech ends, trigger video
+        utterance.onend = () => {
+          setIsPlayingVideo(true);
+        };
+
+        window.speechSynthesis.speak(utterance);
+      };
+
+      const handleVideoEnd = () => {
+        setIsPlayingVideo(false);
+      };
+
+      const handleSleepyVideoEnd = () => {
+        setHasPlayedSleepyVideo(true);
       };
 
       const handleImPlaying = (e) => {
@@ -569,10 +790,15 @@
         setIsSnoozeMuted(true);
       };
 
+      const handleResumeSleep = (e) => {
+        e.stopPropagation();
+        setIsSnoozeMuted(false);
+      };
+
       const formatTime = (totalSeconds) => {
         const m = Math.floor(totalSeconds / 60);
         const s = totalSeconds % 60;
-        return `${m}m ${s}s`;
+        return `${m}m ${s} s`;
       };
 
       return (
@@ -584,49 +810,78 @@
             flexDirection: 'column',
             background: mood === 'sleepy' && !isAllDone ? '#F3F4F6' : 'white',
             transition: 'background 1s ease',
-            overflow: 'hidden'
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            WebkitOverflowScrolling: 'touch'
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <button onClick={(e) => { e.stopPropagation(); setView('settings'); }} style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer' }}>⚙️ Settings</button>
             <div style={{ fontFamily: 'Fredoka, sans-serif', color: '#4BC2A5' }}>
-              {isAllDone ? `Total Time: ${formatTime(sessionActiveSeconds)}` : `${Math.round(overallProgress)}% Done Today`}
+              {isAllDone ? `Total Time: ${formatTime(sessionActiveSeconds)} ` : `${Math.round(overallProgress)}% Done Today`}
             </div>
           </div>
 
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '0.5rem 0' }}>
             <div style={{
               animation: isAllDone ? 'bounce 1s infinite' : 'none',
-              transformOrigin: 'bottom',
-              marginBottom: '1rem'
+              transformOrigin: 'bottom'
             }}>
-              <BuddyDisplay buddyId={currentBuddyId} mood={mood} message={message} />
+              <BuddyDisplay
+                buddyId={currentBuddyId}
+                mood={mood}
+                message={message}
+                isPlayingVideo={isPlayingVideo}
+                onVideoEnd={handleVideoEnd}
+                isPlayingSleepyVideo={isPlayingSleepyVideo}
+                onSleepyVideoEnd={handleSleepyVideoEnd}
+              />
             </div>
 
             {mood === 'sleepy' && !isAllDone && (
-              <button
-                onClick={handleImPlaying}
-                className="btn"
-                style={{
-                  background: '#FF8F5E',
-                  color: 'white',
-                  padding: '0.5rem 1rem',
-                  borderRadius: '20px',
-                  fontSize: '0.9rem',
-                  marginTop: '0rem',
-                  opacity: isSnoozeMuted ? 0.5 : 1
-                }}
-              >
-                {isSnoozeMuted ? "Shhh... (Muted)" : "I'm Playing! (Shhh!)"}
-              </button>
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <button
+                  onClick={handleImPlaying}
+                  className="btn"
+                  style={{
+                    background: '#FF8F5E',
+                    color: 'white',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '20px',
+                    fontSize: '0.9rem',
+                    opacity: isSnoozeMuted ? 0.5 : 1,
+                    cursor: isSnoozeMuted ? 'default' : 'pointer'
+                  }}
+                  disabled={isSnoozeMuted}
+                >
+                  {isSnoozeMuted ? "Shhh... (Muted)" : "I'm Playing! (Shhh!)"}
+                </button>
+
+                {isSnoozeMuted && (
+                  <button
+                    onClick={handleResumeSleep}
+                    className="btn"
+                    style={{
+                      background: '#4BC2A5',
+                      color: 'white',
+                      padding: '0.5rem 1rem',
+                      borderRadius: '20px',
+                      fontSize: '0.9rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Go back to sleep
+                  </button>
+                )}
+              </div>
             )}
 
             <style>{`
-                 @keyframes bounce {
-                     0%, 100% { transform: translateY(0); }
-                     50% { transform: translateY(-20px); }
-                 }
-             `}</style>
+    @keyframes bounce {
+      0 %, 100 % { transform: translateY(0); }
+      50 % { transform: translateY(-20px); }
+    }
+    `}</style>
           </div>
 
           <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -660,6 +915,60 @@
                 </div>
               );
             })}
+          </div>
+
+          {/* Daydreaming Controls - Hidden at bottom */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.5rem',
+            marginTop: '2rem',
+            paddingTop: '1rem',
+            borderTop: '1px solid #E5E7EB',
+            opacity: 0.6
+          }}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsDaydreaming(true);
+                daydreamingStartRef.current = Date.now();
+              }}
+              style={{
+                padding: '0.4rem 0.8rem',
+                background: isDaydreaming ? '#9CA3AF' : '#E5E7EB',
+                color: isDaydreaming ? 'white' : '#6B7280',
+                border: 'none',
+                borderRadius: '16px',
+                cursor: isDaydreaming ? 'default' : 'pointer',
+                fontSize: '0.8rem'
+              }}
+            >
+              {isDaydreaming ? "Daydreaming..." : "Daydreaming Now"}
+            </button>
+            <select
+              value={inactivityThreshold}
+              onChange={(e) => {
+                e.stopPropagation();
+                setInactivityThreshold(Number(e.target.value));
+              }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                padding: '0.4rem',
+                borderRadius: '8px',
+                border: '1px solid #E5E7EB',
+                fontSize: '0.8rem',
+                color: '#6B7280',
+                cursor: 'pointer'
+              }}
+            >
+              <option value={0.5}>30s</option>
+              <option value={1}>1m</option>
+              <option value={2}>2m</option>
+              <option value={3}>3m</option>
+              <option value={5}>5m</option>
+              <option value={8}>8m</option>
+            </select>
           </div>
         </div>
       );
