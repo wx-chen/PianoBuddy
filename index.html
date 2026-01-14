@@ -35,7 +35,7 @@
         id: 'melody',
         name: 'Melody the Cat',
         assets: {
-          happy: './assets/melody_happy_sora.PNG',
+          happy: './assets/melody_happy.PNG',
           anxious: './assets/melody_tired.PNG',
           sleepy: './assets/melody_sleepy.PNG',
           videoHappy: './assets/melody_happy_video.mp4',
@@ -47,11 +47,11 @@
         id: 'rhythm',
         name: 'Rhythm the Panda',
         assets: {
-          happy: './assets/rhythm_happy_sora.PNG',
-          anxious: './assets/rhythm_anxious.PNG',
-          sleepy: './assets/panda_sleepy.JPG',
+          happy: './assets/rhythm_happy.PNG',
+          anxious: './assets/rhythm_tired.PNG',
+          sleepy: './assets/rhythm_sleepy.PNG',
           videoHappy: './assets/rhythm_happy_video.mp4',
-          videoSleepy: './assets/rhythm_sleepy_video.mp4'
+          videoSleepy: './assets/rhythm_sleeping_video.mp4'
         },
         color: '#4BC2A5'
       },
@@ -59,11 +59,11 @@
         id: 'sparkle',
         name: 'Sparkle the Unicorn',
         assets: {
-          happy: './assets/sparkle_happy_sora.PNG',
-          anxious: './assets/sparkle_anxious.PNG',
-          sleepy: './assets/sparkle_sleepy.JPG',
+          happy: './assets/sparkle_happy.PNG',
+          anxious: './assets/sparkle_tired.PNG',
+          sleepy: './assets/sparkle_sleepy.PNG',
           videoHappy: './assets/sparkle_happy_video.mp4',
-          videoSleepy: './assets/sparkle_sleepy_video.mp4'
+          videoSleepy: './assets/sparkle_sleeping_video.mp4'
         },
         color: '#FFB7B2'
       },
@@ -71,11 +71,11 @@
         id: 'splash',
         name: 'Splash the Dolphin',
         assets: {
-          happy: './assets/splash_happy_sora.PNG',
-          anxious: './assets/splash_anxious.PNG',
-          sleepy: './assets/splash_sleepy.JPG',
+          happy: './assets/splash_happy.PNG',
+          anxious: './assets/splash_tired.PNG',
+          sleepy: './assets/splash_sleepy.PNG',
           videoHappy: './assets/splash_happy_video.mp4',
-          videoSleepy: './assets/splash_sleepy_video.mp4'
+          videoSleepy: './assets/splash_sleeping_video.mp4'
         },
         color: '#64C5EB'
       }
@@ -146,9 +146,7 @@
       ],
       sleepy: [
         "Zzz... oh! You're back!",
-        "I dreamt of music...",
         "Is it time to play again?",
-        "*Yawn* Ready when you are!",
         "Wake me up with a tune!"
       ]
     };
@@ -538,6 +536,7 @@
       const [isPlayingVideo, setIsPlayingVideo] = useState(false);
       const [isPlayingSleepyVideo, setIsPlayingSleepyVideo] = useState(false);
       const [hasPlayedSleepyVideo, setHasPlayedSleepyVideo] = useState(false);
+      const [celebrationPending, setCelebrationPending] = useState(false);
       const [_, setTick] = useState(0);
 
       // Derived State
@@ -708,27 +707,37 @@
             }
           } else if (!isDaydreaming) {
             // If NOT Daydreaming, Buddy is ALWAYS Happy
-            if (mood !== 'happy') setMood('happy');
+            if (mood !== 'happy') {
+              setMood('happy');
+              setIsPlayingSleepyVideo(false);
+            }
           }
         }, 1000);
         return () => clearInterval(interval);
       }, [inactivityThreshold, mood, isAllDone, hasStarted, isDaydreaming]);
 
       useEffect(() => {
-        if (isAllDone) {
+        if (isAllDone && !celebrationPending) {
           const count = 200;
           const defaults = { origin: { y: 0.7 } };
           window.confetti && window.confetti({ ...defaults, particleCount: count, spread: 70, startVelocity: 40 });
           setMessage("ALL GOALS FINISHED! YAY!");
           speak("Amazing! You finished everything! You are a super star!", 'happy');
         }
-      }, [isAllDone]);
+      }, [isAllDone, celebrationPending]);
 
       const handleProgress = (goalId) => {
         lastPracticeRef.current = Date.now();
         setMood('happy');
+        setIsPlayingSleepyVideo(false);
         setIsDaydreaming(false); // Resume active practice
         incrementProgress(goalId);
+
+        // Check if this action will complete all goals
+        const willFinishAll = (totalCurrent + 1) >= totalTarget;
+        if (willFinishAll) {
+          setCelebrationPending(true);
+        }
 
         let quoteToSpeak;
         if (mood === 'sleepy') {
@@ -779,6 +788,9 @@
 
       const handleVideoEnd = () => {
         setIsPlayingVideo(false);
+        if (celebrationPending) {
+          setCelebrationPending(false);
+        }
       };
 
       const handleSleepyVideoEnd = () => {
@@ -824,7 +836,7 @@
 
           <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '0.5rem 0' }}>
             <div style={{
-              animation: isAllDone ? 'bounce 1s infinite' : 'none',
+              animation: (isAllDone && !celebrationPending) ? 'bounce 1s infinite' : 'none',
               transformOrigin: 'bottom'
             }}>
               <BuddyDisplay
@@ -962,15 +974,15 @@
                 cursor: 'pointer'
               }}
             >
+              <option value={0.2}>15s</option>
               <option value={0.5}>30s</option>
               <option value={1}>1m</option>
               <option value={2}>2m</option>
               <option value={3}>3m</option>
               <option value={5}>5m</option>
-              <option value={8}>8m</option>
             </select>
-          </div>
-        </div>
+          </div >
+        </div >
       );
     };
 
