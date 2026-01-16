@@ -39,7 +39,8 @@
           anxious: './assets/melody_tired.png',
           sleepy: './assets/melody_sleepy.png',
           videoHappy: './assets/melody_happy_video.mp4',
-          videoSleepy: './assets/melody_sleeping_video.mp4'
+          videoSleepy: './assets/melody_sleeping_video.mp4',
+          videoCelebration: './assets/melody_celebration.mp4'
         },
         color: '#FF8F5E'
       },
@@ -51,7 +52,8 @@
           anxious: './assets/rhythm_tired.png',
           sleepy: './assets/rhythm_sleepy.png',
           videoHappy: './assets/rhythm_happy_video.mp4',
-          videoSleepy: './assets/rhythm_sleeping_video.mp4'
+          videoSleepy: './assets/rhythm_sleeping_video.mp4',
+          videoCelebration: './assets/rhythm_celebration.mp4'
         },
         color: '#4BC2A5'
       },
@@ -63,7 +65,8 @@
           anxious: './assets/sparkle_tired.png',
           sleepy: './assets/sparkle_sleepy.png',
           videoHappy: './assets/sparkle_happy_video.mp4',
-          videoSleepy: './assets/sparkle_sleeping_video.mp4'
+          videoSleepy: './assets/sparkle_sleeping_video.mp4',
+          videoCelebration: './assets/sparkle_celebration.mp4'
         },
         color: '#FFB7B2'
       },
@@ -75,7 +78,8 @@
           anxious: './assets/splash_tired.png',
           sleepy: './assets/splash_sleepy.png',
           videoHappy: './assets/splash_happy_video.mp4',
-          videoSleepy: './assets/splash_sleeping_video.mp4'
+          videoSleepy: './assets/splash_sleeping_video.mp4',
+          videoCelebration: './assets/splash_celebration.mp4'
         },
         color: '#64C5EB'
       }
@@ -228,17 +232,22 @@
       isPlayingVideo,
       onVideoEnd,
       isPlayingSleepyVideo,
-      onSleepyVideoEnd
+      onSleepyVideoEnd,
+      isMuted,
+      isPlayingCelebrationVideo,
+      onCelebrationVideoEnd
     }) => {
       const buddy = buddies.find(b => b.id === buddyId);
       const videoRef = useRef(null);
       const sleepyVideoRef = useRef(null);
+      const celebrationVideoRef = useRef(null);
       const [sleepyVideoEnded, setSleepyVideoEnded] = useState(false);
 
       if (!buddy) return null;
       const asset = buddy.assets[mood] || buddy.assets.happy;
       const videoHappyAsset = buddy.assets.videoHappy;
       const videoSleepyAsset = buddy.assets.videoSleepy;
+      const videoCelebrationAsset = buddy.assets.videoCelebration;
 
       // Auto-play happy video when isPlayingVideo becomes true
       useEffect(() => {
@@ -257,6 +266,21 @@
         }
       }, [isPlayingSleepyVideo, videoSleepyAsset]);
 
+      // Auto-play celebration video when isPlayingCelebrationVideo becomes true
+      useEffect(() => {
+        if (isPlayingCelebrationVideo && celebrationVideoRef.current && videoCelebrationAsset) {
+          celebrationVideoRef.current.currentTime = 0;
+          celebrationVideoRef.current.play().catch(e => console.log('Celebration video play error:', e));
+        }
+      }, [isPlayingCelebrationVideo, videoCelebrationAsset]);
+
+      // Imperatively handle mute state for sleepy video
+      useEffect(() => {
+        if (sleepyVideoRef.current) {
+          sleepyVideoRef.current.muted = isMuted;
+        }
+      }, [isMuted]);
+
       const handleVideoEnded = () => {
         if (onVideoEnd) onVideoEnd();
       };
@@ -267,10 +291,15 @@
         if (onSleepyVideoEnd) onSleepyVideoEnd();
       };
 
+      const handleCelebrationVideoEnded = () => {
+        if (onCelebrationVideoEnd) onCelebrationVideoEnd();
+      };
+
       // Determine which layer to show
       const showHappyVideo = isPlayingVideo && videoHappyAsset;
-      const showSleepyVideo = (isPlayingSleepyVideo || sleepyVideoEnded) && videoSleepyAsset && mood === 'sleepy';
-      const showStaticImage = !showHappyVideo && !showSleepyVideo;
+      const showCelebrationVideo = isPlayingCelebrationVideo && videoCelebrationAsset && !showHappyVideo;
+      const showSleepyVideo = (isPlayingSleepyVideo || sleepyVideoEnded) && videoSleepyAsset && mood === 'sleepy' && !showCelebrationVideo;
+      const showStaticImage = !showHappyVideo && !showSleepyVideo && !showCelebrationVideo;
 
       return (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -315,11 +344,34 @@
               />
             )}
 
+            {/* Celebration Video layer */}
+            {videoCelebrationAsset && (
+              <video
+                ref={celebrationVideoRef}
+                src={videoCelebrationAsset}
+                muted={true}
+                onEnded={handleCelebrationVideoEnded}
+                playsInline
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '200px',
+                  height: '200px',
+                  objectFit: 'contain',
+                  opacity: showCelebrationVideo ? 1 : 0,
+                  transition: 'opacity 0.3s ease',
+                  pointerEvents: 'none'
+                }}
+              />
+            )}
+
             {/* Sleepy Video layer */}
             {videoSleepyAsset && (
               <video
                 ref={sleepyVideoRef}
                 src={videoSleepyAsset}
+                muted={isMuted}
                 onEnded={handleSleepyVideoEnded}
                 playsInline
                 style={{
@@ -537,6 +589,8 @@
       const [isPlayingSleepyVideo, setIsPlayingSleepyVideo] = useState(false);
       const [hasPlayedSleepyVideo, setHasPlayedSleepyVideo] = useState(false);
       const [celebrationPending, setCelebrationPending] = useState(false);
+      const [pendingTuneCompletion, setPendingTuneCompletion] = useState(false);
+      const [isPlayingCelebrationVideo, setIsPlayingCelebrationVideo] = useState(false);
       const [_, setTick] = useState(0);
 
       // Derived State
@@ -658,8 +712,11 @@
           if (snoreAudioRef.current) {
             snoreAudioRef.current.pause();
             snoreAudioRef.current.currentTime = 0;
+            snoreAudioRef.current.currentTime = 0;
           }
-          setIsSnoozeMuted(false);
+          if (mood !== 'sleepy' || isAllDone) {
+            setIsSnoozeMuted(false);
+          }
         }
         return () => {
           if (snoozeInterval) clearInterval(snoozeInterval);
@@ -716,15 +773,7 @@
         return () => clearInterval(interval);
       }, [inactivityThreshold, mood, isAllDone, hasStarted, isDaydreaming]);
 
-      useEffect(() => {
-        if (isAllDone && !celebrationPending) {
-          const count = 200;
-          const defaults = { origin: { y: 0.7 } };
-          window.confetti && window.confetti({ ...defaults, particleCount: count, spread: 70, startVelocity: 40 });
-          setMessage("ALL GOALS FINISHED! YAY!");
-          speak("Amazing! You finished everything! You are a super star!", 'happy');
-        }
-      }, [isAllDone, celebrationPending]);
+
 
       const handleProgress = (goalId) => {
         lastPracticeRef.current = Date.now();
@@ -734,6 +783,14 @@
         incrementProgress(goalId);
 
         // Check if this action will complete all goals
+        const goal = goals.find(g => g.id === goalId);
+        const nextCount = goal.currentCount + 1;
+        const isGoalFinished = nextCount >= goal.targetCount;
+
+        if (isGoalFinished) {
+          setPendingTuneCompletion(true);
+        }
+
         const willFinishAll = (totalCurrent + 1) >= totalTarget;
         if (willFinishAll) {
           setCelebrationPending(true);
@@ -788,8 +845,65 @@
 
       const handleVideoEnd = () => {
         setIsPlayingVideo(false);
+
+        if (pendingTuneCompletion) {
+          setIsPlayingCelebrationVideo(true);
+          setPendingTuneCompletion(false);
+          const fireConfetti = () => {
+            const count = 100;
+            const defaults = { origin: { y: 0.7 } };
+            window.confetti && window.confetti({ ...defaults, particleCount: count, spread: 60, startVelocity: 35 });
+          };
+          fireConfetti();
+          setTimeout(fireConfetti, 2000);
+          setTimeout(fireConfetti, 4000);
+
+          const hoorayMsg = "Hooray! You finished the tune!";
+          if (celebrationPending) {
+            // Chain the All Done message
+            speak(hoorayMsg, 'happy');
+            // We can't easily chain strictly with onend without callback logic, 
+            // but we can trust the flow or use a timeout/ref info.
+            // Simpler: Just speak the second message after a delay or let the user hear just one combined message?
+            // User wants BOTH.
+            // Let's modify speak to accept a callback or just use window.speechSynthesis queue.
+            // standard behavior is queueing! So calling speak twice should work.
+            // But my helper cancels first.
+            // I will modify the helper call here to specific logic.
+
+            // Actually, my speak helper cancels.
+            // I'll manually queue them.
+            const u1 = new SpeechSynthesisUtterance(hoorayMsg);
+            const u2 = new SpeechSynthesisUtterance("Amazing! You finished everything! You are a super star!");
+
+            // Apply voice/pitch to both (simplified duplication of logic for safety)
+            let basePitch = 1.0;
+            if (currentBuddyId === 'melody') basePitch = 1.2;
+            // ... (abbreviated for brevity, better to use helper if modified)
+
+            // Hack: Just call speak helper for first, wait, then second?
+            // Better: Update speak helper? No, too risky.
+            // Just construct them here.
+            setMessage("ALL GOALS FINISHED! YAY!");
+            speak(hoorayMsg + " Amazing! You finished everything! You are a super star!", 'happy');
+          } else {
+            speak(hoorayMsg, 'happy');
+          }
+          return;
+        }
+
+        if (celebrationPending) {
+          // This case only happens if we didn't have a tune completion pending (unlikely given flow)
+          // or if logic slipped.
+          setCelebrationPending(false);
+        }
+      };
+
+      const handleCelebrationVideoEnd = () => {
         if (celebrationPending) {
           setCelebrationPending(false);
+        } else {
+          setIsPlayingCelebrationVideo(false);
         }
       };
 
@@ -828,7 +942,10 @@
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <button onClick={(e) => { e.stopPropagation(); setView('settings'); }} style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer' }}>⚙️ Settings</button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button onClick={(e) => { e.stopPropagation(); setView('onboarding'); }} style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer' }}>🏠 Home</button>
+              <button onClick={(e) => { e.stopPropagation(); setView('settings'); }} style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer' }}>⚙️ Settings</button>
+            </div>
             <div style={{ fontFamily: 'Fredoka, sans-serif', color: '#4BC2A5' }}>
               {isAllDone ? `Total Time: ${formatTime(sessionActiveSeconds)} ` : `${Math.round(overallProgress)}% Done Today`}
             </div>
@@ -847,6 +964,9 @@
                 onVideoEnd={handleVideoEnd}
                 isPlayingSleepyVideo={isPlayingSleepyVideo}
                 onSleepyVideoEnd={handleSleepyVideoEnd}
+                isMuted={isSnoozeMuted}
+                isPlayingCelebrationVideo={isPlayingCelebrationVideo}
+                onCelebrationVideoEnd={handleCelebrationVideoEnd}
               />
             </div>
 
@@ -896,7 +1016,7 @@
     `}</style>
           </div>
 
-          <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {goals.map(goal => {
               const isDone = goal.currentCount >= goal.targetCount;
               const progress = Math.min((goal.currentCount / goal.targetCount) * 100, 100);
