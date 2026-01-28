@@ -76,14 +76,21 @@ window.PracticeView = () => {
                 transition: 'background 1s ease'
             }}
         >
-            {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <button
-                    onClick={(e) => { e.stopPropagation(); setView('settings'); }}
-                    style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer' }}
-                >
-                    ⚙️ Settings
-                </button>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); setView('onboarding'); }}
+                        style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', maxWidth: '85px', textAlign: 'left', lineHeight: '1.2', display: 'flex', gap: '4px', alignItems: 'flex-start' }}
+                    >
+                        <span>🏠</span> <span>Pick Another Buddy</span>
+                    </button>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); setView('settings'); }}
+                        style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', maxWidth: '85px', textAlign: 'left', lineHeight: '1.2', display: 'flex', gap: '4px', alignItems: 'flex-start' }}
+                    >
+                        <span>⚙️</span> <span>Add Another Goal</span>
+                    </button>
+                </div>
                 <div style={{ fontFamily: 'Fredoka, sans-serif', color: '#4BC2A5' }}>
                     {Math.round(overallProgress)}% Done Today
                 </div>

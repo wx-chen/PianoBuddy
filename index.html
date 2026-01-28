@@ -163,7 +163,7 @@
       const [currentBuddyId, setCurrentBuddyId] = useState(null);
       const [view, setView] = useState('onboarding');
       const [goals, setGoals] = useState([]);
-      const [inactivityThreshold, setInactivityThreshold] = useState(5);
+      const [inactivityThreshold, setInactivityThreshold] = useState(0.25); // Default 15s
 
       // GLOBAL TIMER STATE
       const [sessionActiveSeconds, setSessionActiveSeconds] = useState(0);
@@ -554,10 +554,26 @@
               color: 'white',
               fontSize: '1.2rem',
               borderRadius: '16px',
-              marginTop: 'auto'
+              marginTop: 'auto',
+              marginBottom: '0.5rem'
             }}
           >
             Start Practicing!
+          </button>
+          <button
+            className="btn"
+            onClick={() => setView('practice')}
+            style={{
+              width: '100%',
+              padding: '1rem',
+              background: 'none',
+              border: '2px solid #D1D5DB',
+              color: '#6B7280',
+              fontSize: '1.2rem',
+              borderRadius: '16px'
+            }}
+          >
+            Cancel
           </button>
         </div>
       );
@@ -943,8 +959,18 @@
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button onClick={(e) => { e.stopPropagation(); setView('onboarding'); }} style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer' }}>🏠 Home</button>
-              <button onClick={(e) => { e.stopPropagation(); setView('settings'); }} style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer' }}>⚙️ Settings</button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setView('onboarding'); }}
+                style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', maxWidth: '85px', textAlign: 'left', lineHeight: '1.2', display: 'flex', gap: '4px', alignItems: 'flex-start' }}
+              >
+                <span>🏠</span> <span>Pick Another Buddy</span>
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setView('settings'); }}
+                style={{ background: 'none', border: 'none', color: '#9CA3AF', cursor: 'pointer', maxWidth: '85px', textAlign: 'left', lineHeight: '1.2', display: 'flex', gap: '4px', alignItems: 'flex-start' }}
+              >
+                <span>⚙️</span> <span>Add Another Goal</span>
+              </button>
             </div>
             <div style={{ fontFamily: 'Fredoka, sans-serif', color: '#4BC2A5' }}>
               {isAllDone ? `Total Time: ${formatTime(sessionActiveSeconds)} ` : `${Math.round(overallProgress)}% Done Today`}

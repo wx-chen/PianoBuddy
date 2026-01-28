@@ -142,10 +142,26 @@ window.ParentSettings = () => {
                     color: 'white',
                     fontSize: '1.2rem',
                     borderRadius: '16px',
-                    marginTop: 'auto'
+                    marginTop: 'auto',
+                    marginBottom: '0.5rem'
                 }}
             >
                 Start Practicing!
+            </button>
+            <button
+                className="btn"
+                onClick={() => setView('practice')}
+                style={{
+                    width: '100%',
+                    padding: '1rem',
+                    background: 'none',
+                    border: '2px solid #D1D5DB',
+                    color: '#6B7280',
+                    fontSize: '1.2rem',
+                    borderRadius: '16px'
+                }}
+            >
+                Cancel
             </button>
         </div>
     );
